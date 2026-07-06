@@ -519,6 +519,39 @@ function setPlayIcon(){
   reelR.classList.toggle('spin', isPlaying);
 }
 
+/* ---------- Media Session (reproducción en segundo plano / pantalla de bloqueo) ---------- */
+function updateMediaSession(){
+  if(!('mediaSession' in navigator)) return;
+  const t = tracks[currentIndex];
+  if(!t){
+    navigator.mediaSession.metadata = null;
+    return;
+  }
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: cleanName(t.name),
+    artist: 'Casete',
+    album: 'Tu música',
+    artwork: [
+      { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' }
+    ]
+  });
+  navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+}
+
+function setupMediaSessionHandlers(){
+  if(!('mediaSession' in navigator)) return;
+  navigator.mediaSession.setActionHandler('play', ()=>{ if(!isPlaying) togglePlay(); });
+  navigator.mediaSession.setActionHandler('pause', ()=>{ if(isPlaying) togglePlay(); });
+  navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+  navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+  try{
+    navigator.mediaSession.setActionHandler('seekto', (details)=>{
+      if(details.seekTime !== undefined) audio.currentTime = details.seekTime;
+    });
+  }catch(e){}
+}
+
 /* ---------- Playback ---------- */
 async function playTrackAt(i){
   if(i < 0 || i >= tracks.length) return;
@@ -534,6 +567,7 @@ async function playTrackAt(i){
   }
   setPlayIcon();
   updateNowPlaying();
+  updateMediaSession();
   renderList();
 }
 
@@ -550,6 +584,7 @@ function togglePlay(){
     isPlaying = true;
   }
   setPlayIcon();
+  updateMediaSession();
   renderList();
 }
 
@@ -582,6 +617,15 @@ audio.addEventListener('timeupdate', ()=>{
   timeCur.textContent = fmtTime(audio.currentTime);
   if(audio.duration){
     seek.value = (audio.currentTime / audio.duration) * 100;
+    if('mediaSession' in navigator){
+      try{
+        navigator.mediaSession.setPositionState({
+          duration: audio.duration,
+          playbackRate: audio.playbackRate,
+          position: audio.currentTime
+        });
+      }catch(e){}
+    }
   }
 });
 audio.addEventListener('loadedmetadata', ()=>{
@@ -644,6 +688,7 @@ if('serviceWorker' in navigator){
   tracks = await getAllTracks();
   renderList();
   updateNowPlaying();
+  setupMediaSessionHandlers();
 })();
 </script>
 </body>
