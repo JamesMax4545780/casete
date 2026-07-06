@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1b1420">
-<title>Casete — Tu música offline</title>
+<meta name="theme-color" content="#000000">
+<title>Casete </title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,14 +13,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1b1420;
-    --groove:#2d2433;
-    --groove-2:#3a2f42;
-    --amber:#e2a54d;
-    --amber-dim:#a97a3c;
-    --cream:#f3e9da;
-    --rose:#c17a6f;
-    --danger:#b5555a;
+    --ink:#000000;
+    --groove:#0d0b21;
+    --groove-2:#1b1257;
+    --amber:#12A4D9;
+    --amber-dim:#5b7fc4;
+    --cream:#f2f4fb;
+    --rose:#4712D9;
+    --danger:#d9534f;
+    --accent-mid:#1240D9;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
@@ -181,8 +182,8 @@
   .btn-play{
     width:56px; height:56px;
     border-radius:50%;
-    background:var(--amber);
-    color:var(--ink);
+    background:var(--accent-mid);
+    color:#fff;
     display:flex; align-items:center; justify-content:center;
   }
   .btn-play svg{ width:24px; height:24px; }
@@ -212,6 +213,57 @@
     color:var(--amber-dim); margin:0; font-family:'JetBrains Mono', monospace;
   }
   .library-head span{ font-size:11px; color:var(--amber-dim); font-family:'JetBrains Mono', monospace; }
+  .library-head .right{ display:flex; align-items:center; gap:10px; }
+  .sort-btn{
+    background:none; border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+    color:var(--amber); font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:1px; padding:5px 9px;
+    display:flex; align-items:center; gap:5px; cursor:pointer;
+  }
+  .sort-btn svg{ width:13px; height:13px; }
+
+  /* Timer modal */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.65);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-sheet{
+    width:100%; max-width:480px;
+    background:linear-gradient(160deg, var(--groove), var(--groove-2));
+    border-radius:22px 22px 0 0;
+    padding:22px 20px calc(env(safe-area-inset-bottom) + 22px);
+  }
+  .modal-sheet h3{
+    margin:0 0 4px; font-size:17px; text-align:center;
+  }
+  .modal-sheet .sub{
+    text-align:center; font-size:12px; color:var(--amber-dim); margin-bottom:16px;
+  }
+  .timer-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;
+  }
+  .timer-grid button{
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+    color:var(--cream); border-radius:12px; padding:14px 6px;
+    font-family:'JetBrains Mono', monospace; font-size:13px; cursor:pointer;
+  }
+  .timer-grid button.active{ background:var(--accent-mid); border-color:var(--accent-mid); color:#fff; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-actions button{
+    flex:1; border:none; border-radius:12px; padding:13px; cursor:pointer;
+    font-family:'Fraunces', serif; font-size:14px;
+  }
+  .modal-actions .cancel{ background:rgba(255,255,255,0.08); color:var(--cream); }
+  .modal-actions .confirm{ background:var(--accent-mid); color:#fff; }
+  .timer-badge{
+    position:absolute; top:16px; right:20px;
+    background:var(--accent-mid); color:#fff;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    padding:4px 9px; border-radius:20px; display:none; align-items:center; gap:5px;
+  }
+  .timer-badge.show{ display:flex; }
+  .timer-badge svg{ width:11px; height:11px; }
 
   .track-item{
     display:flex; align-items:center; gap:12px;
@@ -286,6 +338,10 @@
   </header>
 
   <div class="deck">
+    <div class="timer-badge" id="timerBadge">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 10.4l4 2.4-.75 1.2-4.25-2.5V7h1v5.4z"/></svg>
+      <span id="timerBadgeText">15:00</span>
+    </div>
     <div class="reels">
       <div class="reel" id="reelL"></div>
       <div class="tape-line"></div>
@@ -328,13 +384,23 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg>
         Repetir
       </button>
+      <button id="timerBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 10.4l4 2.4-.75 1.2-4.25-2.5V7h1v5.4z"/></svg>
+        Temporizador
+      </button>
     </div>
   </div>
 
   <div class="library">
     <div class="library-head">
       <h2>Tu biblioteca</h2>
-      <span id="countLabel">0 canciones</span>
+      <div class="right">
+        <button class="sort-btn" id="sortBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h12v2H3zm0 5h9v2H3zm0 5h6v2H3zm14-13v14.2l-2.6-2.6-1.4 1.4L18 21l5-5-1.4-1.4L19 17.2V3z"/></svg>
+          <span id="sortLabel">Agregado</span>
+        </button>
+        <span id="countLabel">0 canciones</span>
+      </div>
     </div>
     <div id="list"></div>
   </div>
@@ -347,6 +413,25 @@
 </div>
 <input type="file" id="fileInput" accept="audio/*" multiple>
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="timerOverlay">
+  <div class="modal-sheet">
+    <h3>Temporizador de apagado</h3>
+    <div class="sub">La música se detiene sola al terminar el tiempo</div>
+    <div class="timer-grid" id="timerGrid">
+      <button data-min="15">15 min</button>
+      <button data-min="30">30 min</button>
+      <button data-min="45">45 min</button>
+      <button data-min="60">1 hora</button>
+      <button data-min="90">1h 30</button>
+      <button data-min="0">Desactivar</button>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" id="timerCancel">Cancelar</button>
+      <button class="confirm" id="timerConfirm">Aplicar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ---------- IndexedDB ---------- */
@@ -400,10 +485,16 @@ function deleteTrack(id){
 
 /* ---------- State ---------- */
 let tracks = [];
+let allTracksCache = [];
 let currentIndex = -1;
+let currentTrackId = null;
 let isPlaying = false;
 let isShuffle = false;
 let repeatMode = false; // repeat current track
+let sortMode = 'added'; // 'added' | 'asc' | 'desc'
+let sleepTimeoutId = null;
+let sleepIntervalId = null;
+let sleepEndAt = null;
 const audio = new Audio();
 
 /* ---------- Elements ---------- */
@@ -420,6 +511,15 @@ const reelL = $('reelL');
 const reelR = $('reelR');
 const countLabel = $('countLabel');
 const toast = $('toast');
+const sortBtn = $('sortBtn');
+const sortLabel = $('sortLabel');
+const timerBtn = $('timerBtn');
+const timerBadge = $('timerBadge');
+const timerBadgeText = $('timerBadgeText');
+const timerOverlay = $('timerOverlay');
+const timerGrid = $('timerGrid');
+const timerCancel = $('timerCancel');
+const timerConfirm = $('timerConfirm');
 
 const ICON_PLAY = '<path d="M8 5v14l11-7z"/>';
 const ICON_PAUSE = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
@@ -440,6 +540,31 @@ function showToast(msg){
 
 function cleanName(filename){
   return filename.replace(/\.[^/.]+$/, '');
+}
+
+/* ---------- Sort ---------- */
+const SORT_LABELS = { added:'Agregado', asc:'A–Z', desc:'Z–A' };
+
+function applySort(){
+  let base = allTracksCache.slice();
+  if(sortMode === 'asc'){
+    base.sort((a,b)=> cleanName(a.name).localeCompare(cleanName(b.name), 'es', {sensitivity:'base'}));
+  } else if(sortMode === 'desc'){
+    base.sort((a,b)=> cleanName(b.name).localeCompare(cleanName(a.name), 'es', {sensitivity:'base'}));
+  }
+  return base;
+}
+
+function recomputeCurrentIndex(){
+  currentIndex = currentTrackId == null ? -1 : tracks.findIndex(t=>t.id === currentTrackId);
+}
+
+async function reloadTracks(){
+  allTracksCache = await getAllTracks();
+  tracks = applySort();
+  recomputeCurrentIndex();
+  renderList();
+  updateNowPlaying();
 }
 
 /* ---------- Rendering ---------- */
@@ -475,18 +600,15 @@ function renderList(){
     row.querySelector('.del').addEventListener('click', async (e)=>{
       e.stopPropagation();
       const id = Number(e.currentTarget.dataset.id);
+      const wasCurrent = currentTrackId === id;
       await deleteTrack(id);
-      const wasCurrent = tracks[currentIndex] && tracks[currentIndex].id === id;
-      tracks = await getAllTracks();
       if(wasCurrent){
         audio.pause();
         isPlaying = false;
-        currentIndex = -1;
-        updateNowPlaying();
-      } else if(currentIndex >= 0){
-        currentIndex = tracks.findIndex(x=>x.id === (tracks[currentIndex] && tracks[currentIndex].id));
+        currentTrackId = null;
+        setPlayIcon();
       }
-      renderList();
+      await reloadTracks();
       showToast('Canción eliminada');
     });
     listEl.appendChild(row);
@@ -556,6 +678,7 @@ function setupMediaSessionHandlers(){
 async function playTrackAt(i){
   if(i < 0 || i >= tracks.length) return;
   currentIndex = i;
+  currentTrackId = tracks[i].id;
   const t = tracks[i];
   const url = URL.createObjectURL(t.blob);
   audio.src = url;
@@ -661,6 +784,15 @@ $('repeatBtn').addEventListener('click', (e)=>{
   e.currentTarget.classList.toggle('active', repeatMode);
 });
 
+sortBtn.addEventListener('click', ()=>{
+  sortMode = sortMode === 'added' ? 'asc' : sortMode === 'asc' ? 'desc' : 'added';
+  sortLabel.textContent = SORT_LABELS[sortMode];
+  tracks = applySort();
+  recomputeCurrentIndex();
+  renderList();
+  updateNowPlaying();
+});
+
 /* ---------- Add files ---------- */
 $('addBtn').addEventListener('click', ()=> $('fileInput').click());
 $('fileInput').addEventListener('change', async (e)=>{
@@ -669,10 +801,89 @@ $('fileInput').addEventListener('change', async (e)=>{
   for(const f of files){
     await addTrack(f.name, f);
   }
-  tracks = await getAllTracks();
-  renderList();
+  await reloadTracks();
   showToast(files.length === 1 ? 'Canción agregada' : files.length + ' canciones agregadas');
   e.target.value = '';
+});
+
+/* ---------- Temporizador de apagado ---------- */
+function fmtCountdown(ms){
+  const total = Math.max(0, Math.round(ms/1000));
+  const m = Math.floor(total/60);
+  const s = total%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function tickSleepBadge(){
+  if(!sleepEndAt) return;
+  const remaining = sleepEndAt - Date.now();
+  if(remaining <= 0){
+    timerBadgeText.textContent = '00:00';
+    return;
+  }
+  timerBadgeText.textContent = fmtCountdown(remaining);
+}
+
+function startSleepTimer(minutes){
+  cancelSleepTimer();
+  sleepEndAt = Date.now() + minutes*60000;
+  timerBadge.classList.add('show');
+  timerBtn.classList.add('active');
+  tickSleepBadge();
+  sleepIntervalId = setInterval(tickSleepBadge, 1000);
+  sleepTimeoutId = setTimeout(()=>{
+    audio.pause();
+    isPlaying = false;
+    setPlayIcon();
+    updateMediaSession();
+    renderList();
+    cancelSleepTimer();
+    showToast('Temporizador terminado · música pausada');
+    // Intento de cierre; los navegadores solo lo permiten en algunos casos.
+    try{ window.close(); }catch(e){}
+  }, minutes*60000);
+}
+
+function cancelSleepTimer(){
+  if(sleepTimeoutId) clearTimeout(sleepTimeoutId);
+  if(sleepIntervalId) clearInterval(sleepIntervalId);
+  sleepTimeoutId = null;
+  sleepIntervalId = null;
+  sleepEndAt = null;
+  timerBadge.classList.remove('show');
+  timerBtn.classList.remove('active');
+}
+
+timerBtn.addEventListener('click', ()=>{
+  Array.from(timerGrid.children).forEach(b=> b.classList.remove('active'));
+  if(sleepEndAt){
+    const minsLeft = Math.round((sleepEndAt - Date.now())/60000);
+    const match = Array.from(timerGrid.children).find(b=> Number(b.dataset.min) === minsLeft);
+    if(match) match.classList.add('active');
+  }
+  timerOverlay.classList.add('show');
+});
+
+timerCancel.addEventListener('click', ()=> timerOverlay.classList.remove('show'));
+timerOverlay.addEventListener('click', (e)=>{ if(e.target === timerOverlay) timerOverlay.classList.remove('show'); });
+
+Array.from(timerGrid.children).forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    Array.from(timerGrid.children).forEach(b=> b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+timerConfirm.addEventListener('click', ()=>{
+  const active = timerGrid.querySelector('button.active');
+  const minutes = active ? Number(active.dataset.min) : 0;
+  if(minutes > 0){
+    startSleepTimer(minutes);
+    showToast('Temporizador activado · ' + minutes + ' min');
+  } else {
+    cancelSleepTimer();
+  }
+  timerOverlay.classList.remove('show');
 });
 
 /* ---------- Service worker ---------- */
@@ -685,9 +896,7 @@ if('serviceWorker' in navigator){
 /* ---------- Init ---------- */
 (async function init(){
   await openDB();
-  tracks = await getAllTracks();
-  renderList();
-  updateNowPlaying();
+  await reloadTracks();
   setupMediaSessionHandlers();
 })();
 </script>
